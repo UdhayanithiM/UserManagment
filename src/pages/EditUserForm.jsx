@@ -19,6 +19,7 @@ function EditUserForm() {
           throw new Error('Failed to fetch user');
         }
         const data = await response.json();
+        if (!data.success) throw new Error(data.error);
         setUser(data.data);
       } catch (error) {
         toast.error(error.message);
@@ -33,8 +34,11 @@ function EditUserForm() {
 
   function handleChange(e) {
     const { name, value } = e.target;
-    setUser(prev => ({ ...prev, [name]: value }));
-    // Clear error when user types
+    setUser(prev => ({ 
+      ...prev, 
+      [name]: value 
+    }));
+    
     if (errors[name]) {
       setErrors(prev => ({ ...prev, [name]: '' }));
     }
@@ -47,7 +51,9 @@ function EditUserForm() {
     try {
       const response = await fetch(`/api/users/${id}`, {
         method: 'PUT',
-        headers: { 'Content-Type': 'application/json' },
+        headers: { 
+          'Content-Type': 'application/json' 
+        },
         body: JSON.stringify(user),
       });
 
@@ -66,7 +72,7 @@ function EditUserForm() {
         return;
       }
 
-      toast.success('User updated successfully');
+      toast.success('User updated successfully!');
       navigate('/users');
     } catch (error) {
       toast.error(error.message);
@@ -81,7 +87,7 @@ function EditUserForm() {
   const fields = [
     { name: 'firstName', label: 'First Name', type: 'text', required: true },
     { name: 'lastName', label: 'Last Name', type: 'text', required: true },
-    { name: 'email', label: 'Email', type: 'email', required: true },
+    { name: 'email', label: 'Email', type: 'email', required: true, disabled: true },
     { name: 'phone', label: 'Phone', type: 'tel' },
     { 
       name: 'gender', 
@@ -101,7 +107,10 @@ function EditUserForm() {
       <form onSubmit={handleSubmit}>
         {fields.map(field => (
           <div key={field.name} className="form-group">
-            <label htmlFor={field.name}>{field.label}</label>
+            <label htmlFor={field.name}>
+              {field.label}
+              {field.required && <span className="required">*</span>}
+            </label>
             
             {field.type === 'select' ? (
               <select
@@ -110,6 +119,7 @@ function EditUserForm() {
                 value={user[field.name] || ''}
                 onChange={handleChange}
                 required={field.required}
+                disabled={field.disabled}
                 className={errors[field.name] ? 'error' : ''}
               >
                 <option value="">Select {field.label}</option>
@@ -127,6 +137,7 @@ function EditUserForm() {
                 value={user[field.name] || ''}
                 onChange={handleChange}
                 required={field.required}
+                disabled={field.disabled}
                 min={field.min}
                 max={field.max}
                 className={errors[field.name] ? 'error' : ''}
@@ -139,13 +150,22 @@ function EditUserForm() {
           </div>
         ))}
 
-        <button 
-          type="submit" 
-          disabled={isSubmitting}
-          className="submit-btn"
-        >
-          {isSubmitting ? 'Saving...' : 'Save Changes'}
-        </button>
+        <div className="form-actions">
+          <button 
+            type="button" 
+            onClick={() => navigate(-1)}
+            className="cancel-btn"
+          >
+            Cancel
+          </button>
+          <button 
+            type="submit" 
+            disabled={isSubmitting}
+            className="submit-btn"
+          >
+            {isSubmitting ? 'Saving...' : 'Save Changes'}
+          </button>
+        </div>
       </form>
     </div>
   );

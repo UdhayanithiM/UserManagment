@@ -1,4 +1,4 @@
-import { BrowserRouter, Routes, Route, Link } from 'react-router-dom';
+import { BrowserRouter, Routes, Route, Navigate, NavLink } from 'react-router-dom'; // Added NavLink here
 import { ToastContainer } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
 import Home from './pages/Home';
@@ -13,9 +13,24 @@ function App() {
     <BrowserRouter>
       <div className="app-container">
         <nav className="main-nav">
-          <Link to="/" className="nav-link">Home</Link>
-          <Link to="/users" className="nav-link">Users</Link>
-          <Link to="/add-user" className="nav-link">Add User</Link>
+          <NavLink 
+            to="/" 
+            className={({ isActive }) => isActive ? 'nav-link active' : 'nav-link'}
+          >
+            Home
+          </NavLink>
+          <NavLink 
+            to="/users" 
+            className={({ isActive }) => isActive ? 'nav-link active' : 'nav-link'}
+          >
+            Users
+          </NavLink>
+          <NavLink 
+            to="/add-user" 
+            className={({ isActive }) => isActive ? 'nav-link active' : 'nav-link'}
+          >
+            Add User
+          </NavLink>
         </nav>
 
         <main className="main-content">
@@ -25,7 +40,7 @@ function App() {
             <Route path="/users/:id" element={<UserDetails />} />
             <Route path="/add-user" element={<AddUser />} />
             <Route path="/edit-user/:id" element={<EditUserForm />} />
-            <Route path="*" element={<div className="not-found">Page Not Found</div>} />
+            <Route path="*" element={<Navigate to="/" replace />} />
           </Routes>
         </main>
 
@@ -39,6 +54,7 @@ function App() {
           pauseOnFocusLoss
           draggable
           pauseOnHover
+          theme="colored"
         />
       </div>
     </BrowserRouter>

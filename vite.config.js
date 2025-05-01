@@ -8,13 +8,7 @@ export default defineConfig({
       '/api': {
         target: 'http://localhost:5000',
         changeOrigin: true,
-        rewrite: (path) => path.replace(/^\/api/, ''),
-        secure: false,
-        configure: (proxy) => {
-          proxy.on('error', (err) => {
-            console.log('Proxy Error:', err);
-          });
-        }
+        secure: false
       }
     }
   }

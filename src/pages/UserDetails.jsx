@@ -18,6 +18,7 @@ function UserDetails() {
           throw new Error('Failed to fetch user');
         }
         const data = await response.json();
+        if (!data.success) throw new Error(data.error);
         setUser(data.data);
       } catch (err) {
         toast.error(err.message);
@@ -39,11 +40,13 @@ function UserDetails() {
         method: 'DELETE',
       });
 
+      const data = await response.json();
+      
       if (!response.ok) {
-        throw new Error('Failed to delete user');
+        throw new Error(data.error || 'Failed to delete user');
       }
 
-      toast.success('User deleted successfully');
+      toast.success('User deleted successfully!');
       navigate('/users');
     } catch (err) {
       toast.error(err.message);
@@ -66,6 +69,9 @@ function UserDetails() {
           src={user.image || 'https://via.placeholder.com/150'}
           alt={user.fullName}
           className="profile-image"
+          onError={(e) => {
+            e.target.src = 'https://via.placeholder.com/150';
+          }}
         />
         
         <h2>{user.firstName} {user.lastName}</h2>

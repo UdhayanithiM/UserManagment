@@ -1,80 +1,101 @@
 import { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
+import { toast } from 'react-toastify';
+import 'react-toastify/dist/ReactToastify.css';
 
 function UsersList() {
   const [users, setUsers] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
+  const [searchTerm, setSearchTerm] = useState('');
+  const [currentPage, setCurrentPage] = useState(1);
+  const [totalPages, setTotalPages] = useState(1);
+  const usersPerPage = 10;
 
   useEffect(() => {
-    async function fetchUsers() {
+    const fetchUsers = async () => {
       try {
-        const response = await fetch('https://dummyjson.com/users');
+        const response = await fetch(`/api/users?page=${currentPage}&limit=${usersPerPage}`);
+        if (!response.ok) {
+          throw new Error('Failed to fetch users');
+        }
         const data = await response.json();
-        const apiUsers = data.users;
-
-        const localUsers = JSON.parse(localStorage.getItem('users')) || [];
-
-        // Tagging local users for identification (optional)
-        const localUsersTagged = localUsers.map(user => ({
-          ...user,
-          isLocal: true,
-          image: user.image || 'https://via.placeholder.com/100?text=No+Image'
-        }));
-
-        const allUsers = [...apiUsers, ...localUsersTagged];
-        setUsers(allUsers);
-      } catch (error) {
-        console.error('Error fetching users:', error);
+        setUsers(data.data);
+        setTotalPages(data.pagination.totalPages);
+      } catch (err) {
+        setError(err.message);
+        toast.error(err.message);
       } finally {
         setLoading(false);
       }
-    }
+    };
 
     fetchUsers();
-  }, []);
+  }, [currentPage]);
 
-  if (loading) return <h2>Loading users...</h2>;
+  const filteredUsers = users.filter(user =>
+    `${user.firstName} ${user.lastName} ${user.university || ''} ${user.email}`
+      .toLowerCase()
+      .includes(searchTerm.toLowerCase())
+  );
+
+  if (loading) return <div className="loading-spinner">Loading users...</div>;
+  if (error) return <div className="error-message">{error}</div>;
 
   return (
-    <div style={{ padding: '20px' }}>
-      <h1 style={{ textAlign: 'center' }}>👥 Users List</h1>
-      <div style={{ marginBottom: '20px', textAlign: 'right' }}>
-        <Link to="/add-user">
-          <button style={{ padding: '10px 20px', cursor: 'pointer' }}>➕ Add New User</button>
-        </Link>
+    <div className="users-container">
+      <h1>Users List</h1>
+
+      <div className="search-container">
+        <input
+          type="text"
+          placeholder="Search by name, email, or university..."
+          value={searchTerm}
+          onChange={(e) => setSearchTerm(e.target.value)}
+        />
       </div>
 
-      <div style={{ display: 'flex', flexWrap: 'wrap', gap: '20px' }}>
-        {users.map((user) => (
-          <div
-            key={user.id}
-            style={{
-              border: '1px solid #ccc',
-              borderRadius: '8px',
-              padding: '15px',
-              width: '250px',
-              boxShadow: '0 2px 5px rgba(0,0,0,0.1)'
-            }}
-          >
-            <img
-              src={user.image || 'https://via.placeholder.com/100?text=User'}
-              alt={`${user.firstName}`}
-              style={{ width: '100px', height: '100px', borderRadius: '50%' }}
-            />
-            <h3>{user.firstName} {user.lastName}</h3>
-            <p><strong>Email:</strong> {user.email}</p>
-            <p><strong>Phone:</strong> {user.phone}</p>
-            <p><strong>Age:</strong> {user.age}</p>
-            <p><strong>University:</strong> {user.university || 'N/A'}</p>
-            {user.isLocal && <span style={{ color: 'green', fontWeight: 'bold' }}>🗃️ Local User</span>}
-            <div style={{ marginTop: '10px' }}>
-              <Link to={`/users/${user.id}`} state={{ user }}>
-                <button style={{ padding: '6px 12px', cursor: 'pointer' }}>👁 View Details</button>
-              </Link>
+      <div className="users-grid">
+        {filteredUsers.length === 0 ? (
+          <div className="no-results">No users found</div>
+        ) : (
+          filteredUsers.map((user) => (
+            <div key={user._id} className="user-card">
+              <img
+                src={user.image || 'https://via.placeholder.com/150'}
+                alt={user.fullName}
+                className="user-image"
+              />
+              <div className="user-info">
+                <h3>{user.firstName} {user.lastName}</h3>
+                <p>{user.email}</p>
+                {user.university && <p>{user.university}</p>}
+                <Link to={`/users/${user._id}`} className="view-btn">
+                  View Details
+                </Link>
+              </div>
             </div>
-          </div>
-        ))}
+          ))
+        )}
       </div>
+
+      {totalPages > 1 && (
+        <div className="pagination">
+          <button
+            onClick={() => setCurrentPage(p => Math.max(1, p - 1))}
+            disabled={currentPage === 1}
+          >
+            Previous
+          </button>
+          <span>Page {currentPage} of {totalPages}</span>
+          <button
+            onClick={() => setCurrentPage(p => Math.min(totalPages, p + 1))}
+            disabled={currentPage === totalPages}
+          >
+            Next
+          </button>
+        </div>
+      )}
     </div>
   );
 }

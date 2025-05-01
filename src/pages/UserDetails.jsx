@@ -1,61 +1,98 @@
-import { useParams, useNavigate } from 'react-router-dom';
 import { useState, useEffect } from 'react';
+import { useParams, useNavigate } from 'react-router-dom';
+import { toast } from 'react-toastify';
+import 'react-toastify/dist/ReactToastify.css';
 
 function UserDetails() {
   const { id } = useParams();
   const navigate = useNavigate();
   const [user, setUser] = useState(null);
   const [loading, setLoading] = useState(true);
+  const [deleting, setDeleting] = useState(false);
 
   useEffect(() => {
-    async function fetchUser() {
+    const fetchUser = async () => {
       try {
-        const response = await fetch(`https://dummyjson.com/users/${id}`);
-        if (!response.ok) throw new Error();
-
+        const response = await fetch(`/api/users/${id}`);
+        if (!response.ok) {
+          throw new Error('Failed to fetch user');
+        }
         const data = await response.json();
-        setUser(data);
-      } catch {
-        const localUsers = JSON.parse(localStorage.getItem('users')) || [];
-        const localUser = localUsers.find((u) => u.id.toString() === id);
-        setUser(localUser || null);
+        setUser(data.data);
+      } catch (err) {
+        toast.error(err.message);
+        navigate('/users', { replace: true });
       } finally {
         setLoading(false);
       }
-    }
+    };
 
     fetchUser();
-  }, [id]);
+  }, [id, navigate]);
 
-  if (loading) return <h2>Loading user details...</h2>;
-  if (!user) return <h2>User not found.</h2>;
+  async function handleDelete() {
+    if (!window.confirm('Are you sure you want to delete this user?')) return;
+    
+    setDeleting(true);
+    try {
+      const response = await fetch(`/api/users/${id}`, {
+        method: 'DELETE',
+      });
+
+      if (!response.ok) {
+        throw new Error('Failed to delete user');
+      }
+
+      toast.success('User deleted successfully');
+      navigate('/users');
+    } catch (err) {
+      toast.error(err.message);
+    } finally {
+      setDeleting(false);
+    }
+  }
+
+  if (loading) return <div className="loading-spinner">Loading user details...</div>;
+  if (!user) return <div className="error-message">User not found</div>;
 
   return (
-    <div style={{ padding: '30px' }}>
-      <h1>👤 User Details</h1>
-      <div style={{
-        border: '1px solid #ccc',
-        padding: '20px',
-        borderRadius: '10px',
-        width: '300px',
-        margin: 'auto',
-        textAlign: 'center',
-        boxShadow: '0 2px 10px rgba(0,0,0,0.1)'
-      }}>
+    <div className="user-details">
+      <button onClick={() => navigate(-1)} className="back-btn">
+        &larr; Back to Users
+      </button>
+
+      <div className="user-profile">
         <img
           src={user.image || 'https://via.placeholder.com/150'}
-          alt={user.firstName}
-          width="150"
-          height="150"
-          style={{ borderRadius: '50%' }}
+          alt={user.fullName}
+          className="profile-image"
         />
+        
         <h2>{user.firstName} {user.lastName}</h2>
-        <p><strong>Email:</strong> {user.email}</p>
-        <p><strong>Phone:</strong> {user.phone}</p>
-        <p><strong>Gender:</strong> {user.gender}</p>
-        <p><strong>Age:</strong> {user.age}</p>
-        <p><strong>University:</strong> {user.university || 'N/A'}</p>
-        <button style={{ marginTop: '20px' }} onClick={() => navigate(-1)}>⬅ Back</button>
+        
+        <div className="user-meta">
+          <p><strong>Email:</strong> {user.email}</p>
+          {user.phone && <p><strong>Phone:</strong> {user.phone}</p>}
+          <p><strong>Gender:</strong> {user.gender}</p>
+          {user.age && <p><strong>Age:</strong> {user.age}</p>}
+          {user.university && <p><strong>University:</strong> {user.university}</p>}
+        </div>
+
+        <div className="action-buttons">
+          <button 
+            onClick={() => navigate(`/edit-user/${user._id}`)}
+            className="edit-btn"
+          >
+            Edit User
+          </button>
+          <button 
+            onClick={handleDelete}
+            disabled={deleting}
+            className="delete-btn"
+          >
+            {deleting ? 'Deleting...' : 'Delete User'}
+          </button>
+        </div>
       </div>
     </div>
   );
